@@ -124,6 +124,18 @@ class LuceneRDD[T: ClassTag](protected val partitionsRDD: RDD[AbstractLuceneRDDP
 
 
   /**
+    * Deduplication of self
+    *
+    * @param searchQueryGen Search query mapper function
+    * @param topK Number of results to deduplication
+    * @return
+    */
+  def dedup[T1: ClassTag](searchQueryGen: T1 => String, topK: Int = DefaultTopK)
+  : RDD[(T1, Array[SparkScoreDoc])] = {
+    link[T1](this.firstParent[T1], searchQueryGen, topK)
+  }
+
+  /**
    * Entity linkage via Lucene query over all elements of an RDD.
    *
    * @param other DataFrame to be linked
@@ -323,7 +335,7 @@ object LuceneRDD {
   def apply[T : ClassTag]
   (elems: Iterable[T])(implicit sc: SparkContext, conv: T => Document)
   : LuceneRDD[T] = {
-    apply(sc.parallelize[T](elems.toSeq))
+    apply[T](sc.parallelize[T](elems.toSeq))
   }
 
   /**
@@ -334,7 +346,7 @@ object LuceneRDD {
    */
   def apply(dataFrame: DataFrame)
   : LuceneRDD[Row] = {
-    apply(dataFrame.rdd)
+    apply[Row](dataFrame.rdd)
   }
 
   /**
